@@ -186,7 +186,7 @@ module.exports.createServer = function (config) {
                         if (!device) {
                             log.error('ERR | WS | Unknown device ', data.deviceid);
                         } else {
-                            device.state = data.params.switch;
+                            device.state = data.params.switch || data.params.switches;
                             device.conn = conn;
                             device.rawMessageLastUpdate = data;
                             device.rawMessageLastUpdate.timestamp = Date.now();
@@ -228,7 +228,7 @@ module.exports.createServer = function (config) {
                                 device.messages = device.messages.filter(function (item) {
                                     return item !== message;
                                 })
-                                device.state = message.params.switch;
+                                device.state = message.params.switch || message.params.switches;
                                 state.updateKnownDevice(device);
                                 log.trace('INFO | WS | APP | action has been accnowlaged by the device ' + JSON.stringify(data));
                             } else {
@@ -274,6 +274,23 @@ module.exports.createServer = function (config) {
             var d = state.getDeviceById(deviceId);
             if (!d || (typeof d.conn == 'undefined')) return "disconnected";
             return d.state;
+        },
+        turnOnDeviceOutlet: (deviceId, outletIndex) => {
+            var d = state.getDeviceById(deviceId);
+            if (!d || (typeof d.conn == 'undefined')) return "disconnected";
+            let switchesState = [...d.state]
+            switchesState.find(outlet => outlet.outlet == outletIndex).switch = "on"
+            state.pushMessage({ action: 'update', value: {switches: switchesState}, target: deviceId });
+            return "on";
+        },
+
+        turnOffDeviceOutlet: (deviceId, outletIndex) => {
+            var d = state.getDeviceById(deviceId);
+            if (!d || (typeof d.conn == 'undefined')) return "disconnected";
+            let switchesState = [...d.state]
+            switchesState.find(outlet => outlet.outlet == outletIndex).switch = "off"
+            state.pushMessage({ action: 'update', value: {switches: switchesState}, target: deviceId });
+            return "off";
         },
 
         turnOnDevice: (deviceId) => {

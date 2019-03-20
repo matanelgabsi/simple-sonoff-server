@@ -55,7 +55,7 @@ server.get('/devices/:deviceId/status', function (req, res) {
 });
 
 //switch the device
-server.get('/devices/:deviceId/:state', function (req, res) {
+server.get('/devices/:deviceId/:state/:outletIndex?', function (req, res) {
     log.log('GET | %s | %s ', req.method, req.url);
     var d = devices.getDeviceState(req.params.deviceId);
 
@@ -65,13 +65,40 @@ server.get('/devices/:deviceId/:state', function (req, res) {
         switch (req.params.state.toUpperCase()) {
             case "1":
             case "ON":
-                res.sendStatus(200);
-                devices.turnOnDevice(req.params.deviceId);
+                if (req.params.outletIndex !== undefined ) {
+                    if (Array.isArray(d)) {
+                        devices.turnOnDeviceOutlet(req.params.deviceId, parseInt(req.params.outletIndex));
+                        res.sendStatus(200);
+                    } else {
+                        res.status(404).send('This is not a multi-switch device!');
+                    }
+                } else {
+                    if (typeof d == "string") {
+                        devices.turnOnDevice(req.params.deviceId);
+                        res.sendStatus(200);
+                    } else {
+                        res.status(404).send('This is not a single switch device!');
+                    } 
+                }
+                
                 break;
             case "0":
             case "OFF":
-                res.sendStatus(200);
-                devices.turnOffDevice(req.params.deviceId);
+                if (req.params.outletIndex !== undefined) {
+                    if (Array.isArray(d)) {
+                        devices.turnOffDeviceOutlet(req.params.deviceId, parseInt(req.params.outletIndex));
+                        res.sendStatus(200);
+                    } else {
+                        res.status(404).send('This is not a multi-switch device!');
+                    }
+                } else {
+                    if (typeof d == "string") {
+                        devices.turnOffDevice(req.params.deviceId);
+                        res.sendStatus(200);
+                    } else {
+                        res.status(404).send('This is not a single switch device!');
+                    }
+                }
                 break;
             default:
                 res.status(404).send('Sonoff device ' + req.params.deviceId + ' can not be switched to "' + req.params.state + '", only "ON" and "OFF" are supported currently');
